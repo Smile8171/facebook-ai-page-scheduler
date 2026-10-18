@@ -1,4 +1,5 @@
-name: AI photo Facebook scheduler
+"name": Free photo Facebook scheduler
+
 "on":
   schedule:
     - cron: '30 0 * * *'
@@ -8,28 +9,32 @@ permissions:
   contents: write
 
 concurrency:
-  group: facebook-page-ai-scheduler
+  group: facebook-page-photo-scheduler
   cancel-in-progress: false
 
 jobs:
-  publish-ai-photo:
+  publish-photo:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run AI photo scheduler
+
+      - name: Install photo processing dependency
+        run: python -m pip install -r requirements.txt
+
+      - name: Run free photo scheduler
         env:
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           FB_GRAPH_API_VERSION: ${{ vars.FB_GRAPH_API_VERSION || 'v26.0' }}
           FB_POST_CAPTION: ${{ vars.FB_POST_CAPTION || 'Aaj ki nayi vibe!' }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python publish_due_posts.py
+
       - name: Save state
         if: always()
         run: |
@@ -39,6 +44,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No publication state changes to save."
           else
-            git commit -m "Update Facebook AI post state"
+            git commit -m "Update Facebook scheduled post state"
             git push
           fi
