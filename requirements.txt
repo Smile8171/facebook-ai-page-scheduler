@@ -1,1 +1,2 @@
 Pillow>=11,<13
+google-genai>=1.75.0,<2
