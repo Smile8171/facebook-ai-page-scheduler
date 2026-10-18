@@ -9,12 +9,12 @@ Facebook Page, and schedule it for 7:00 AM India time.
 1. Create a GitHub repository and copy this folder's contents into its root.
 2. Add your source images under `photos/` and push them to the repository.
    Supported formats: JPG, JPEG, PNG, BMP, GIF, TIF, and TIFF.
-3. In the repository, open **Settings → Secrets and variables → Actions** and add:
+3. In the repository, open **Settings > Secrets and variables > Actions** and add:
    - `FB_PAGE_ID`
    - `FB_PAGE_ACCESS_TOKEN`
    - `GEMINI_API_KEY`
 4. Enable GitHub Actions and allow read/write repository contents under
-   **Settings → Actions → General → Workflow permissions**.
+   **Settings > Actions > General > Workflow permissions**.
 5. Ensure the Meta app/Page token is authorized to create Page content. Meta
    requires a Page access token with `pages_manage_posts`,
    `pages_manage_engagement`, `pages_read_engagement`, and
@@ -27,6 +27,12 @@ Facebook post for 7:00 AM India time. A manual workflow run is safe: it will
 not schedule a second post on a date already recorded in `state.json`. If the
 scheduled workflow starts too late for Facebook's future-scheduling window,
 the script chooses the next day's 7:00 AM slot.
+
+To publish one public demo immediately, manually run **Publish Gemini-edited
+demo** from the Actions tab. It uses the next unused photo, publishes it to
+the Page right away, and marks that photo as processed so the daily scheduler
+won't reuse it. The demo is a real public post; delete it from Facebook if you
+only wanted a preview.
 
 ## Add and manage photos
 
