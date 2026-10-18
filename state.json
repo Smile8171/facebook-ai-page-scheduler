@@ -1,5 +1,16 @@
 {
-  "processed_images": [],
-  "scheduled_dates": {},
-  "run_dates": []
+  "processed_images": [
+    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg"
+  ],
+  "scheduled_dates": {
+    "2026-10-19": {
+      "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
+      "facebook_post_id": "732689656598200_122174144174986570",
+      "facebook_photo_id": "122174144144986570",
+      "scheduled_for": "2026-10-19T07:00:00+05:30"
+    }
+  },
+  "run_dates": [
+    "2026-10-19"
+  ]
 }
