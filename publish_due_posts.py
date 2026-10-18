@@ -1,6 +1,5 @@
-import base64
+import io
 import json
-import mimetypes
 import os
 import sys
 import uuid
@@ -11,6 +10,8 @@ from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from PIL import Image, ImageEnhance, ImageOps
+
 ROOT = Path(__file__).resolve().parent
 PHOTOS_DIR = ROOT / "photos"
 STATE_PATH = ROOT / "state.json"
@@ -19,14 +20,14 @@ POST_TIME = time(hour=7)
 SCHEDULE_BUFFER = timedelta(minutes=15)
 MAX_FACEBOOK_IMAGE_SIZE = 10 * 1024 * 1024
 IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
-STYLE_PROMPTS = (
-    "Create a polished fashion-editorial variation. Give the subject a confident new pose, dramatic studio lighting, and a premium magazine color grade.",
-    "Create a warm golden-hour lifestyle variation. Use a natural, relaxed pose, soft sunlight, and a beautiful outdoor background.",
-    "Create a bold cinematic variation. Use a dynamic pose, rich colors, atmospheric lighting, and a clean background.",
-    "Create an elegant minimal studio variation. Use a refined pose, soft neutral colors, and professional softbox lighting.",
-    "Create a vibrant street-style variation. Use an energetic pose, colorful urban background, and crisp editorial lighting.",
-    "Create a dreamy artistic variation. Use a graceful pose, soft pastel tones, and subtle cinematic light.",
-    "Create a premium travel-editorial variation. Use a candid pose, an attractive scenic background, and natural light.",
+PHOTO_STYLES = (
+    "natural",
+    "warm",
+    "cool",
+    "vibrant",
+    "soft",
+    "monochrome",
+    "cinematic",
 )
 
 
@@ -76,7 +77,11 @@ def http_json(
 
 
 def build_multipart(
-    fields: dict[str, str], file_field: str, file_name: str, image: bytes, mime_type: str
+    fields: dict[str, str],
+    file_field: str,
+    file_name: str,
+    image: bytes,
+    mime_type: str,
 ) -> tuple[bytes, str]:
     boundary = f"----PythonBoundary{uuid.uuid4().hex}"
     parts: list[bytes] = []
@@ -105,87 +110,66 @@ def build_multipart(
     return b"".join(parts), boundary
 
 
-def generate_with_openai(source_path: Path, prompt: str, api_key: str) -> bytes:
-    source_bytes = source_path.read_bytes()
-    source_mime = mimetypes.guess_type(source_path.name)[0] or "image/jpeg"
-    body, boundary = build_multipart(
-        {"model": "gpt-image-2.5-sunburst", "prompt": prompt, "quality": "high"},
-        "image",
-        source_path.name,
-        source_bytes,
-        source_mime,
-    )
-    result = http_json(
-        "POST",
-        "https://api.openai.com/v1/images/edits",
-        body,
-        {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-        },
-    )
-    images = result.get("data")
-    if not isinstance(images, list) or not images or not isinstance(images[0], dict):
-        raise RuntimeError("OpenAI did not return an image")
-    encoded_image = images[0].get("b64_json")
-    if not isinstance(encoded_image, str):
-        raise RuntimeError("OpenAI response did not contain base64 image data")
-    try:
-        return base64.b64decode(encoded_image, validate=True)
-    except ValueError as error:
-        raise RuntimeError("OpenAI returned invalid base64 image data") from error
+def apply_tint(
+    image: Image.Image, color: tuple[int, int, int], strength: float
+) -> Image.Image:
+    return Image.blend(image, Image.new("RGB", image.size, color), strength)
 
 
-def generate_with_gemini(source_path: Path, prompt: str, api_key: str) -> bytes:
-    source_mime = mimetypes.guess_type(source_path.name)[0] or "image/jpeg"
-    image_data = base64.b64encode(source_path.read_bytes()).decode("ascii")
-    payload = {
-        "model": "gemini-nano-banana-2.1",
-        "input": [
-            {"type": "text", "text": prompt},
-            {"type": "image", "mime_type": source_mime, "data": image_data},
-        ],
-    }
-    result = http_json(
-        "POST",
-        "https://generativelanguage.googleapis.com/v1beta/interactions",
-        json.dumps(payload).encode("utf-8"),
-        {"Content-Type": "application/json", "x-goog-api-key": api_key},
-    )
-    output_image = result.get("output_image")
-    if not isinstance(output_image, dict):
-        raise RuntimeError("Gemini did not return an output image")
-    encoded_image = output_image.get("data")
-    if not isinstance(encoded_image, str):
-        raise RuntimeError("Gemini response did not contain base64 image data")
-    try:
-        return base64.b64decode(encoded_image, validate=True)
-    except ValueError as error:
-        raise RuntimeError("Gemini returned invalid base64 image data") from error
+def create_free_variation(source_path: Path, style_index: int) -> bytes:
+    with Image.open(source_path) as source:
+        source.seek(0)
+        image = ImageOps.exif_transpose(source)
+        if image.mode in ("RGBA", "LA") or "transparency" in image.info:
+            rgba = image.convert("RGBA")
+            background = Image.new("RGBA", rgba.size, "white")
+            background.alpha_composite(rgba)
+            image = background.convert("RGB")
+        else:
+            image = image.convert("RGB")
 
+    style = PHOTO_STYLES[style_index % len(PHOTO_STYLES)]
+    if style == "natural":
+        image = ImageOps.autocontrast(image, cutoff=0.5)
+        image = ImageEnhance.Color(image).enhance(1.08)
+        image = ImageEnhance.Contrast(image).enhance(1.04)
+    elif style == "warm":
+        image = ImageEnhance.Color(image).enhance(1.05)
+        image = apply_tint(image, (255, 190, 105), 0.07)
+    elif style == "cool":
+        image = ImageEnhance.Contrast(image).enhance(1.04)
+        image = apply_tint(image, (105, 175, 255), 0.06)
+    elif style == "vibrant":
+        image = ImageOps.autocontrast(image, cutoff=0.5)
+        image = ImageEnhance.Color(image).enhance(1.22)
+        image = ImageEnhance.Contrast(image).enhance(1.08)
+    elif style == "soft":
+        image = ImageEnhance.Color(image).enhance(1.04)
+        image = ImageEnhance.Contrast(image).enhance(0.94)
+        image = ImageEnhance.Sharpness(image).enhance(0.92)
+    elif style == "monochrome":
+        image = ImageOps.colorize(
+            ImageOps.autocontrast(image.convert("L")),
+            black="#20252d",
+            white="#f4eee3",
+        )
+    else:
+        image = ImageOps.autocontrast(image, cutoff=1)
+        image = ImageEnhance.Color(image).enhance(0.92)
+        image = ImageEnhance.Contrast(image).enhance(1.12)
+        image = apply_tint(image, (255, 190, 130), 0.035)
 
-def generate_image(source_path: Path, prompt: str) -> bytes:
-    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if openai_key:
-        try:
-            return generate_with_openai(source_path, prompt, openai_key)
-        except RuntimeError as error:
-            if not os.environ.get("GEMINI_API_KEY", "").strip():
-                raise
-            print(f"OpenAI failed; trying Gemini fallback: {error}", file=sys.stderr)
+    output = io.BytesIO()
+    for max_side in (2048, 1600, 1200, 900, 640):
+        image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+        for quality in (90, 82, 74):
+            output.seek(0)
+            output.truncate()
+            image.save(output, format="JPEG", quality=quality, optimize=True)
+            if output.tell() <= MAX_FACEBOOK_IMAGE_SIZE:
+                return output.getvalue()
 
-    gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if gemini_key:
-        try:
-            return generate_with_gemini(source_path, prompt, gemini_key)
-        except RuntimeError as error:
-            if openai_key:
-                raise RuntimeError(
-                    f"Both image providers failed; Gemini error: {error}"
-                ) from error
-            raise
-
-    raise RuntimeError("Configure OPENAI_API_KEY and/or GEMINI_API_KEY in GitHub Secrets.")
+    raise RuntimeError("Edited photo exceeds Facebook's 10 MB photo limit.")
 
 
 def upload_unpublished_photo(
@@ -199,9 +183,9 @@ def upload_unpublished_photo(
             "caption": caption,
         },
         "source",
-        "ai-variation.png",
+        "photo-variation.jpg",
         image,
-        "image/png",
+        "image/jpeg",
     )
     result = http_json(
         "POST",
@@ -323,16 +307,9 @@ def process_next_photo(now: datetime | None = None) -> int:
 
     photo_path = photos[0]
     relative_path = photo_path.relative_to(ROOT).as_posix()
-    style = STYLE_PROMPTS[len(processed_images) % len(STYLE_PROMPTS)]
-    prompt = (
-        f"{style} Use the supplied photo as visual reference. Make a tasteful, "
-        "high-quality creative variation; do not add text, logos, or watermarks."
-    )
-    image = generate_image(photo_path, prompt)
-    if not image:
-        raise RuntimeError("The image provider returned an empty image.")
-    if len(image) > MAX_FACEBOOK_IMAGE_SIZE:
-        raise RuntimeError("Generated image exceeds Facebook's 10 MB photo limit.")
+    style_index = len(processed_images) % len(PHOTO_STYLES)
+    style = PHOTO_STYLES[style_index]
+    image = create_free_variation(photo_path, style_index)
 
     publish_at = next_publish_time(current_time, scheduled_dates)
     photo_id = upload_unpublished_photo(
@@ -352,7 +329,7 @@ def process_next_photo(now: datetime | None = None) -> int:
     }
     save_json(STATE_PATH, state)
     print(
-        f"Scheduled {relative_path} as Facebook post {post_id} "
+        f"Scheduled {relative_path} ({style} filter) as Facebook post {post_id} "
         f"for {publish_at.isoformat()}."
     )
     return 0
