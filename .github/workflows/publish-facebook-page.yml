@@ -1,5 +1,5 @@
 name: AI photo Facebook scheduler
-
+"on":
 on:
   schedule:
     - cron: '30 0 * * *'
