@@ -54,9 +54,7 @@ you only wanted a preview.
   attempts per configured key for photo editing. If editing fails, it makes one
   original-image generation attempt per configured key, using a randomly chosen
   fashion portrait prompt featuring a fictional adult Korean woman in a tasteful,
-  non-explicit style. If that also fails, it logs the error and uses a local
-  Pillow edit of the source photo. The demo workflow still requires Gemini to
-  succeed. Daily and demo scheduler steps are capped at 9 and 6 minutes,
+  non-explicit style. If Gemini generation fails for every configured key, it then requests an original portrait from Pollinations using the public image endpoint. If Pollinations also fails, it logs the error and uses a local Pillow edit of the source photo. The demo workflow still requires Gemini to succeed. Daily and demo scheduler steps are capped at 9 and 6 minutes,
   respectively; both jobs are capped at 10 minutes.
 - Images with transparency are placed on a white background. Animated images
   use their first frame. Photos are converted to JPEG and resized to fit
