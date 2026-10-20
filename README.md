@@ -48,11 +48,15 @@ you only wanted a preview.
   first key reaches its quota. Keep both keys in GitHub Secrets; do not put
   them in repository files.
   Review generated images for accuracy before enabling automatic publishing.
-- The workflow requires a valid Gemini API key in `GEMINI_API_KEY`. Gemini
-  availability, quotas, and any API charges depend on the Google account and
-  model being used. Each Gemini image request has a 60-second timeout and up to two application attempts per configured key. The scheduler step in both daily and demo workflows is capped at 6 minutes, and each job at 10 minutes; logs include sanitized SDK failure details and retry progress. If editing fails
-  with both keys, the workflow stops rather than publishing the unedited source
-  photo.
+- The daily workflow requires a valid Gemini API key in `GEMINI_API_KEY`. Gemini
+  availability, quotas, and charges depend on the Google account and model. The
+  daily scheduler uses a 60-second HTTPX timeout per request and up to two
+  attempts per configured key. If both keys fail, it logs the error and uses a
+  local Pillow edit to keep scheduling. This fallback adjusts the source
+  image’s appearance; it is not a Gemini-generated new pose or background. The
+  Gemini demo workflow has no local fallback and still requires Gemini to
+  succeed. Both workflows cap scheduler steps at 6 minutes and jobs at 10
+  minutes.
 - Images with transparency are placed on a white background. Animated images
   use their first frame. Photos are converted to JPEG and resized to fit
   Facebook's image size limits without cropping.
