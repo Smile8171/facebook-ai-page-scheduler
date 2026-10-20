@@ -210,7 +210,7 @@ class PublishSlotTests(unittest.TestCase):
         with (
             patch.dict("os.environ", {"POLLINATIONS_API_KEY": "test-key"}),
             patch("publish_due_posts.random.randint", return_value=1) as randint,            
-        patch("publish_due_posts.httpx.get", return_value=response) as request,
+            patch("publish_due_posts.httpx.get", return_value=response) as request,
         ):
             image = create_pollinations_variation(0)
 
