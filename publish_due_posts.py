@@ -515,7 +515,19 @@ def process_next_photo(now: datetime | None = None) -> int:
     relative_path = photo_path.relative_to(ROOT).as_posix()
     style_index = len(processed_images) % len(PHOTO_STYLES)
     style = PHOTO_STYLES[style_index]
-    image = create_ai_variation(photo_path, style_index, gemini_api_keys)
+    try:
+        image = create_ai_variation(photo_path, style_index, gemini_api_keys)
+        edit_description = f"{style} AI edit"
+    except RuntimeError as error:
+        print(
+            f"Gemini image editing failed; using local Pillow fallback: {error}",
+            file=sys.stderr,
+            flush=True,
+        )
+        image = create_free_variation(photo_path, style_index)
+        edit_description = (
+            f"{FREE_PHOTO_STYLES[style_index % len(FREE_PHOTO_STYLES)]} local edit"
+        )
 
     publish_at, slot_name = next_publish_slot(current_time, scheduled_dates)
     photo_id = upload_unpublished_photo(
@@ -538,7 +550,7 @@ def process_next_photo(now: datetime | None = None) -> int:
     }
     save_json(STATE_PATH, state)
     print(
-        f"Scheduled {relative_path} ({style} AI edit) as Facebook post {post_id} "
+        f"Scheduled {relative_path} ({edit_description}) as Facebook post {post_id} "
         f"for the {slot_name} slot at {publish_at.isoformat()}."
     )
     return 0
