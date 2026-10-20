@@ -49,7 +49,7 @@ you only wanted a preview.
   Review generated images for accuracy before enabling automatic publishing.
 - The workflow requires a valid Gemini API key in `GEMINI_API_KEY`. Gemini
   availability, quotas, and any API charges depend on the Google account and
-  model being used. Each Gemini image request has a 60-second timeout and up to two application attempts per configured key. The demo step is capped at 6 minutes and the job at 10 minutes; logs include sanitized SDK failure details and retry progress. If editing fails
+  model being used. Each Gemini image request has a 60-second timeout and up to two application attempts per configured key. The scheduler step in both daily and demo workflows is capped at 6 minutes, and each job at 10 minutes; logs include sanitized SDK failure details and retry progress. If editing fails
   with both keys, the workflow stops rather than publishing the unedited source
   photo.
 - Images with transparency are placed on a white background. Animated images
