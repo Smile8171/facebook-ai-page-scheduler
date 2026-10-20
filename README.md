@@ -16,6 +16,7 @@ India time.
    - `GEMINI_API_KEY`
    - `GEMINI_API_KEY_2` (optional backup key used when the first key is quota-limited)
    - `GEMINI_API_KEY_3` (optional additional fallback key)
+   - `POLLINATIONS_API_KEY` (optional, enables Pollinations fallback; create one at https://enter.pollinations.ai/keys)
 4. Enable GitHub Actions and allow read/write repository contents under
    **Settings > Actions > General > Workflow permissions**.
 5. Ensure the Meta app/Page token is authorized to create Page content. Meta
@@ -54,7 +55,7 @@ you only wanted a preview.
   attempts per configured key for photo editing. If editing fails, it makes one
   original-image generation attempt per configured key, using a randomly chosen
   fashion portrait prompt featuring a fictional adult Korean woman in a tasteful,
-  non-explicit style. If Gemini generation fails for every configured key, it then requests an original portrait from Pollinations using the public image endpoint. If Pollinations also fails, it logs the error and uses a local Pillow edit of the source photo. The demo workflow still requires Gemini to succeed. Daily and demo scheduler steps are capped at 9 and 6 minutes,
+  non-explicit style. If Gemini generation fails for every configured key, it requests an original portrait from Pollinations when `POLLINATIONS_API_KEY` is configured. Pollinations requests may consume the key's Pollen balance. If the key is missing or Pollinations fails, it logs the error and uses a local Pillow edit of the source photo. The demo workflow still requires Gemini to succeed. Daily and demo scheduler steps are capped at 9 and 6 minutes,
   respectively; both jobs are capped at 10 minutes.
 - Images with transparency are placed on a white background. Animated images
   use their first frame. Photos are converted to JPEG and resized to fit
