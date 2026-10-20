@@ -1,12 +1,16 @@
+import io
 import json
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+
+from PIL import Image
 from unittest.mock import patch
 
 from publish_due_posts import (
     LOCAL_TIMEZONE,
+    create_pollinations_variation,
     get_gemini_api_keys,
     get_next_photo,
     next_publish_slot,
@@ -189,6 +193,31 @@ class PublishSlotTests(unittest.TestCase):
             self.assertEqual(ai_variation.call_args_list[1].args, (None, 0, ["gemini-key"]))
             self.assertEqual(upload.call_args.args[3], b"generated-image")
             local_edit.assert_not_called()
+
+    def test_pollinations_requires_api_key(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "POLLINATIONS_API_KEY"):
+                create_pollinations_variation(0)
+
+    def test_pollinations_uses_bearer_key_and_returns_jpeg(self) -> None:
+        image_data = io.BytesIO()
+        Image.new("RGB", (2, 2), color="red").save(image_data, format="PNG")
+        response = type("Response", (), {
+            "content": image_data.getvalue(),
+            "raise_for_status": lambda self: None,
+        })()
+
+        with (
+            patch.dict("os.environ", {"POLLINATIONS_API_KEY": "test-key"}),
+            patch("publish_due_posts.httpx.get", return_value=response) as request,
+        ):
+            image = create_pollinations_variation(0)
+
+        self.assertEqual(
+            request.call_args.kwargs["headers"],
+            {"Authorization": "Bearer test-key"},
+        )
+        self.assertTrue(image.startswith(b"\xff\xd8"))
 
     def test_scheduler_uses_pollinations_when_all_gemini_keys_fail(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
