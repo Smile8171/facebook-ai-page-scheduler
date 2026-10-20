@@ -15,6 +15,7 @@ India time.
    - `FB_PAGE_ACCESS_TOKEN`
    - `GEMINI_API_KEY`
    - `GEMINI_API_KEY_2` (optional backup key used when the first key is quota-limited)
+   - `GEMINI_API_KEY_3` (optional additional fallback key)
 4. Enable GitHub Actions and allow read/write repository contents under
    **Settings > Actions > General > Workflow permissions**.
 5. Ensure the Meta app/Page token is authorized to create Page content. Meta
@@ -43,10 +44,9 @@ you only wanted a preview.
   used. Each post sends the source photo to Gemini again and requests a visibly
   different pose, camera angle, outfit, and background while preserving the
   subject's recognizable identity.
-- Gemini cycles through seven visual directions. Add `GEMINI_API_KEY_2` as a
-  GitHub Actions secret to let the scheduler switch to the backup key when the
-  first key reaches its quota. Keep both keys in GitHub Secrets; do not put
-  them in repository files.
+- Gemini cycles through seven visual directions. Add `GEMINI_API_KEY_2` and `GEMINI_API_KEY_3` as optional fallback keys. The
+  scheduler tries configured keys in order, switching when a key fails. Keep all
+  keys in GitHub Secrets; do not put them in repository files.
   Review generated images for accuracy before enabling automatic publishing.
 - The daily workflow requires a valid Gemini API key in `GEMINI_API_KEY`. Gemini
   availability, quotas, and charges depend on the Google account and model. The
