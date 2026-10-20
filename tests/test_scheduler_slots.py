@@ -122,6 +122,54 @@ class PublishSlotTests(unittest.TestCase):
             self.assertEqual(saved_state["processed_images"], ["photos/source.jpg"] * 3)
             self.assertEqual(saved_state["photo_cycle_index"], 0)
 
+    def test_scheduler_uses_local_edit_when_gemini_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source_path = root / "photos" / "source.jpg"
+            source_path.parent.mkdir()
+            source_path.touch()
+            state_path = root / "state.json"
+            state_path.write_text(
+                json.dumps(
+                    {"processed_images": [], "scheduled_dates": {}, "run_dates": []}
+                ),
+                encoding="utf-8",
+            )
+            publish_time = datetime(2026, 10, 20, 6, 0, tzinfo=LOCAL_TIMEZONE)
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    {
+                        "FB_PAGE_ID": "page-id",
+                        "FB_PAGE_ACCESS_TOKEN": "page-token",
+                        "GEMINI_API_KEY": "gemini-key",
+                    },
+                ),
+                patch("publish_due_posts.ROOT", root),
+                patch("publish_due_posts.STATE_PATH", state_path),
+                patch("publish_due_posts.get_source_photos", return_value=[source_path]),
+                patch(
+                    "publish_due_posts.create_ai_variation",
+                    side_effect=RuntimeError("Gemini timed out"),
+                ),
+                patch(
+                    "publish_due_posts.create_free_variation",
+                    return_value=b"local-edit",
+                ) as local_edit,
+                patch(
+                    "publish_due_posts.upload_unpublished_photo",
+                    return_value="photo-id",
+                ) as upload,
+                patch("publish_due_posts.schedule_page_post", return_value="post-id"),
+            ):
+                self.assertEqual(process_next_photo(publish_time), 0)
+
+            local_edit.assert_called_once_with(source_path, 0)
+            self.assertEqual(upload.call_args.args[3], b"local-edit")
+            saved_state = json.loads(state_path.read_text(encoding="utf-8"))
+            self.assertIn("2026-10-20:morning", saved_state["scheduled_dates"])
+
 
 if __name__ == "__main__":
     unittest.main()
