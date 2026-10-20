@@ -120,7 +120,7 @@ class PublishSlotTests(unittest.TestCase):
                 patch("publish_due_posts.STATE_PATH", state_path),
                 patch("publish_due_posts.get_source_photos", return_value=[source_path]),
                 patch("publish_due_posts.create_ai_variation", return_value=b"edited"),
-                patch("publish_due_posts.upload_unpublished_photo", return_value="photo-id"),
+                patch("publish_due_posts.upload_unpublished_photo", return_value="photo-id") as upload,
                 patch(
                     "publish_due_posts.schedule_page_post",
                     side_effect=["morning-post", "afternoon-post", "evening-post"],
@@ -141,6 +141,9 @@ class PublishSlotTests(unittest.TestCase):
             )
             self.assertEqual(saved_state["processed_images"], ["photos/source.jpg"] * 3)
             self.assertEqual(saved_state["photo_cycle_index"], 0)
+            captions = [entry["caption"] for entry in saved_state["scheduled_dates"].values()]
+self.assertEqual(len(set(captions)), 3)
+self.assertEqual([call.args[4] for call in upload.call_args_list], captions)
 
     def test_scheduler_generates_original_image_when_edit_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
