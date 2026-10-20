@@ -14,23 +14,33 @@ from publish_due_posts import (
 
 
 class PublishSlotTests(unittest.TestCase):
-    def test_selects_both_daily_slots_independently(self) -> None:
+    def test_selects_all_three_daily_slots_independently(self) -> None:
         now = datetime(2026, 10, 20, 0, 30, tzinfo=timezone.utc)
 
         morning, morning_name = next_publish_slot(now, {})
-        evening, evening_name = next_publish_slot(
+        afternoon, afternoon_name = next_publish_slot(
             now,
             {f"{morning.date().isoformat()}:{morning_name}": {}},
         )
+        evening, evening_name = next_publish_slot(
+            now,
+            {
+                f"{morning.date().isoformat()}:{morning_name}": {},
+                f"{afternoon.date().isoformat()}:{afternoon_name}": {},
+            },
+        )
 
         self.assertEqual((morning.hour, morning_name), (7, "morning"))
+        self.assertEqual((afternoon.hour, afternoon.minute, afternoon_name), (13, 10, "afternoon"))
         self.assertEqual((evening.hour, evening_name), (17, "evening"))
-        self.assertEqual(morning.date(), evening.date())
+        self.assertEqual(morning.date(), afternoon.date())
+        self.assertEqual(afternoon.date(), evening.date())
 
     def test_skips_slots_that_are_too_close_or_already_reserved(self) -> None:
         now = datetime(2026, 10, 20, 1, 50, tzinfo=timezone.utc)
         scheduled = {
             "2026-10-20:morning": {},
+            "2026-10-20:afternoon": {},
             "2026-10-20:evening": {},
         }
 
@@ -44,7 +54,7 @@ class PublishSlotTests(unittest.TestCase):
 
         publish_at, slot_name = next_publish_slot(now, {"2026-10-20": {}})
 
-        self.assertEqual((publish_at.hour, slot_name), (17, "evening"))
+        self.assertEqual((publish_at.hour, publish_at.minute, slot_name), (13, 10, "afternoon"))
 
     def test_photo_cycle_reuses_sources_after_finishing_the_list(self) -> None:
         photos = [Path("first.jpg"), Path("second.jpg")]
@@ -60,7 +70,7 @@ class PublishSlotTests(unittest.TestCase):
         self.assertEqual((first, first_index), (photos[1], 1))
         self.assertEqual((second, second_index), (photos[0], 0))
 
-    def test_scheduler_records_morning_and_evening_for_same_day(self) -> None:
+    def test_scheduler_records_all_three_slots_for_same_day(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             source_path = root / "photos" / "source.jpg"
@@ -74,6 +84,7 @@ class PublishSlotTests(unittest.TestCase):
                 encoding="utf-8",
             )
             morning = datetime(2026, 10, 20, 6, 0, tzinfo=LOCAL_TIMEZONE)
+            afternoon = datetime(2026, 10, 20, 12, 10, tzinfo=LOCAL_TIMEZONE)
             evening = datetime(2026, 10, 20, 16, 0, tzinfo=LOCAL_TIMEZONE)
 
             with (
@@ -92,18 +103,23 @@ class PublishSlotTests(unittest.TestCase):
                 patch("publish_due_posts.upload_unpublished_photo", return_value="photo-id"),
                 patch(
                     "publish_due_posts.schedule_page_post",
-                    side_effect=["morning-post", "evening-post"],
+                    side_effect=["morning-post", "afternoon-post", "evening-post"],
                 ),
             ):
                 self.assertEqual(process_next_photo(morning), 0)
+                self.assertEqual(process_next_photo(afternoon), 0)
                 self.assertEqual(process_next_photo(evening), 0)
 
             saved_state = json.loads(state_path.read_text(encoding="utf-8"))
             self.assertEqual(
                 set(saved_state["scheduled_dates"]),
-                {"2026-10-20:morning", "2026-10-20:evening"},
+                {
+                    "2026-10-20:morning",
+                    "2026-10-20:afternoon",
+                    "2026-10-20:evening",
+                },
             )
-            self.assertEqual(saved_state["processed_images"], ["photos/source.jpg"] * 2)
+            self.assertEqual(saved_state["processed_images"], ["photos/source.jpg"] * 3)
             self.assertEqual(saved_state["photo_cycle_index"], 0)
 
 
