@@ -25,7 +25,7 @@ LOCAL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 POST_TIMES = (("morning", time(hour=7)), ("evening", time(hour=17)))
 SCHEDULE_BUFFER = timedelta(minutes=15)
 MAX_FACEBOOK_IMAGE_SIZE = 10 * 1024 * 1024
-GEMINI_REQUEST_TIMEOUT_SECONDS = 120
+GEMINI_REQUEST_TIMEOUT_SECONDS = 300
 GEMINI_MAX_ATTEMPTS = 2
 IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
 PHOTO_STYLES = (
@@ -260,18 +260,34 @@ def create_ai_variation(
                     input=image_input,
                 )
                 break
-            except (APIError, httpx.TimeoutException, httpx.ConnectError) as error:
-                last_error = error
-                quota_exhausted = False
-                if isinstance(error, APIError):
-                    error_message = str(error).lower()
-                    status_code = getattr(error, "code", None)
-                    quota_exhausted = (
-                        status_code == 429
-                        or "resource_exhausted" in error_message
-                        or "quota" in error_message
-                        or "rate limit" in error_message
+            except Exception as error:
+                is_gemini_api_error = isinstance(error, APIError) or (
+                    error.__class__.__module__.startswith("google.genai.")
+                    and (
+                        hasattr(error, "status_code")
+                        or hasattr(error, "message")
+                        or error.__class__.__name__ in {
+                            "APIConnectionError",
+                            "APITimeoutError",
+                        }
                     )
+                )
+                if not (
+                    is_gemini_api_error
+                    or isinstance(error, httpx.HTTPError)
+                ):
+                    raise
+                last_error = error
+                error_message = str(error).lower()
+                status_code = getattr(error, "code", None) or getattr(
+                    error, "status_code", None
+                )
+                quota_exhausted = (
+                    status_code == 429
+                    or "resource_exhausted" in error_message
+                    or "quota" in error_message
+                    or "rate limit" in error_message
+                )
                 if quota_exhausted:
                     break
                 if attempt + 1 < GEMINI_MAX_ATTEMPTS:
