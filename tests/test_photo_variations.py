@@ -9,6 +9,8 @@ from unittest.mock import Mock, patch
 from PIL import Image
 
 from google.genai.errors import APIError
+from google.genai._gaos.lib.compat_errors import APITimeoutError
+import httpx
 
 from publish_due_posts import (
     GEMINI_IMAGE_MODEL,
@@ -139,12 +141,12 @@ class FreePhotoVariationTests(unittest.TestCase):
 
     @patch("publish_due_posts.sleep")
     @patch("publish_due_posts.genai.Client")
-    def test_ai_variation_retries_transient_api_error(
+    def test_ai_variation_retries_modern_sdk_timeout(
         self, client_factory, sleep_mock
     ) -> None:
         client = client_factory.return_value
         client.interactions.create.side_effect = [
-            APIError(503, {"error": {"message": "temporary error"}}),
+            APITimeoutError(httpx.Request("POST", "https://example.com")),
             self.make_image_response(),
         ]
 
