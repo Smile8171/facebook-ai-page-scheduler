@@ -4,12 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from PIL import Image
 
+from google.genai.errors import APIError
+
 from publish_due_posts import (
     GEMINI_IMAGE_MODEL,
+    GEMINI_REQUEST_TIMEOUT_SECONDS,
     MAX_FACEBOOK_IMAGE_SIZE,
     create_ai_variation,
     create_free_variation,
@@ -62,7 +65,18 @@ class FreePhotoVariationTests(unittest.TestCase):
 
         result = create_ai_variation(self.source_path, 0, "test-api-key")
 
-        client_factory.assert_called_once_with(api_key="test-api-key")
+        client_factory.assert_called_once()
+        self.assertEqual(
+            client_factory.call_args.kwargs["api_key"], "test-api-key"
+        )
+        self.assertEqual(
+            client_factory.call_args.kwargs["http_options"].timeout,
+            GEMINI_REQUEST_TIMEOUT_SECONDS,
+        )
+        self.assertEqual(
+            client_factory.call_args.kwargs["http_options"].retry_options.attempts,
+            1,
+        )
         client.interactions.create.assert_called_once()
         request = client.interactions.create.call_args.kwargs
         self.assertEqual(request["model"], GEMINI_IMAGE_MODEL)
@@ -86,6 +100,58 @@ class FreePhotoVariationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "did not contain an edited image"):
             create_ai_variation(self.source_path, 0, "test-api-key")
+
+
+    @patch("publish_due_posts.genai.Client")
+    def test_ai_variation_switches_keys_after_quota_error(self, client_factory) -> None:
+        primary_client = SimpleNamespace(
+            interactions=SimpleNamespace(
+                create=Mock(
+                    side_effect=APIError(
+                        429,
+                        {
+                            "error": {
+                                "message": "Quota exhausted",
+                                "status": "RESOURCE_EXHAUSTED",
+                            }
+                        },
+                    )
+                )
+            )
+        )
+        backup_client = SimpleNamespace(
+            interactions=SimpleNamespace(
+                create=Mock(return_value=self.make_image_response())
+            )
+        )
+        client_factory.side_effect = [primary_client, backup_client]
+
+        result = create_ai_variation(
+            self.source_path, 0, ["primary-key", "backup-key"]
+        )
+
+        self.assertTrue(result.startswith(b"\xff\xd8"))
+        primary_client.interactions.create.assert_called_once()
+        backup_client.interactions.create.assert_called_once()
+        self.assertEqual(
+            client_factory.call_args_list[1].kwargs["api_key"], "backup-key"
+        )
+
+    @patch("publish_due_posts.sleep")
+    @patch("publish_due_posts.genai.Client")
+    def test_ai_variation_retries_transient_api_error(
+        self, client_factory, sleep_mock
+    ) -> None:
+        client = client_factory.return_value
+        client.interactions.create.side_effect = [
+            APIError(503, {"error": {"message": "temporary error"}}),
+            self.make_image_response(),
+        ]
+
+        create_ai_variation(self.source_path, 0, "test-api-key")
+
+        self.assertEqual(client.interactions.create.call_count, 2)
+        sleep_mock.assert_called_once_with(1)
 
 
 if __name__ == "__main__":
