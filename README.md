@@ -51,12 +51,13 @@ you only wanted a preview.
 - The daily workflow requires a valid Gemini API key in `GEMINI_API_KEY`. Gemini
   availability, quotas, and charges depend on the Google account and model. The
   daily scheduler uses a 60-second HTTPX timeout per request and up to two
-  attempts per configured key. If both keys fail, it logs the error and uses a
-  local Pillow edit to keep scheduling. This fallback adjusts the source
-  image’s appearance; it is not a Gemini-generated new pose or background. The
-  Gemini demo workflow has no local fallback and still requires Gemini to
-  succeed. Both workflows cap scheduler steps at 6 minutes and jobs at 10
-  minutes.
+  attempts per configured key for photo editing. If editing fails, it makes one
+  original-image generation attempt per configured key, using a randomly chosen
+  fashion portrait prompt featuring a fictional adult Korean woman in a tasteful,
+  non-explicit style. If that also fails, it logs the error and uses a local
+  Pillow edit of the source photo. The demo workflow still requires Gemini to
+  succeed. Daily and demo scheduler steps are capped at 9 and 6 minutes,
+  respectively; both jobs are capped at 10 minutes.
 - Images with transparency are placed on a white background. Animated images
   use their first frame. Photos are converted to JPEG and resized to fit
   Facebook's image size limits without cropping.
