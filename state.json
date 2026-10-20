@@ -1,9 +1,10 @@
 {
   "processed_images": [
     "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
-    "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg"
+    "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg",
+    "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg"
   ],
-  "photo_cycle_index": 2,
+  "photo_cycle_index": 3,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -17,10 +18,18 @@
       "facebook_photo_id": "122174359742986570",
       "scheduled_for": "2026-10-20T17:00:00+05:30",
       "slot": "evening"
+    },
+    "2026-10-21:morning": {
+      "source_image": "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg",
+      "facebook_post_id": "732689656598200_122174360774986570",
+      "facebook_photo_id": "122174360744986570",
+      "scheduled_for": "2026-10-21T07:00:00+05:30",
+      "slot": "morning"
     }
   },
   "run_dates": [
     "2026-10-19",
+    "2026-10-20",
     "2026-10-20"
   ]
 }
