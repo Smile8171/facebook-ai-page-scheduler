@@ -57,6 +57,45 @@ GENERATED_IMAGE_STYLES = (
 )
 
 
+POST_CAPTION_VARIATIONS = (
+    "Subah ki roshni, nayi umeed. Aaj ka din kis cheez ke liye excited ho?",
+    "Ek muskaan se din behtar ho sakta hai. Aaj kis baat ne aapko smile karaya?",
+    "Apni vibe, apna style. Aaj ka look kaisa lag raha hai?",
+    "Chhoti khushiyan hi bade pal banati hain. Aapki aaj ki khushi kya hai?",
+    "Confidence sabse khoobsurat accessory hai. Aaj aap kis baat par proud ho?",
+    "Thoda sa rang, thodi si masti. Aaj ka mood ek word mein batao!",
+    "Har din ek nayi kahani. Aaj aapki kahani ka best moment kya tha?",
+    "Apne liye waqt nikalna bhi zaroori hai. Aaj aapne khud ko kya treat diya?",
+    "Good vibes aur ek fresh start. Aaj ka goal kya hai?",
+    "Simplicity mein bhi apna alag charm hota hai. Aapka favorite style kya hai?",
+    "Dil se muskurao, baaki din khud chamkega. Aaj aap kis baat ke grateful ho?",
+    "Nayi soch, naya andaaz. Aaj kuch naya try kar rahe ho?",
+    "Aaj ki yaad ko special banane wali ek baat kya hai? Share karo!",
+    "Khud par bharosa rakho, har step matter karta hai. Aapka next goal kya hai?",
+    "Shaam ki calm vibes ya morning ki fresh energy - aapki pick kya hai?",
+)
+
+
+def create_post_caption(
+    scheduled_dates: dict[str, Any], publish_at: datetime, slot_name: str, prefix: str
+) -> str:
+    used = {
+        entry.get("caption")
+        for entry in scheduled_dates.values()
+        if isinstance(entry, dict) and isinstance(entry.get("caption"), str)
+    }
+    slot_index = next(i for i, (name, _) in enumerate(POST_TIMES) if name == slot_name)
+    start = (publish_at.date().toordinal() * len(POST_TIMES) + slot_index) % len(POST_CAPTION_VARIATIONS)
+    for offset in range(len(POST_CAPTION_VARIATIONS)):
+        text = POST_CAPTION_VARIATIONS[(start + offset) % len(POST_CAPTION_VARIATIONS)]
+        caption = f"{prefix} {text}".strip() if prefix else text
+        if caption not in used:
+            return caption
+    text = POST_CAPTION_VARIATIONS[start]
+    base = f"{prefix} {text}".strip() if prefix else text
+    return f"{base} ({publish_at.date().isoformat()} {slot_name})"
+
+
 def get_gemini_api_keys() -> list[str]:
     return [
         key
@@ -561,16 +600,14 @@ def process_next_photo(now: datetime | None = None) -> int:
     access_token = os.environ.get("FB_PAGE_ACCESS_TOKEN", "").strip()
     gemini_api_keys = get_gemini_api_keys()
     api_version = os.environ.get("FB_GRAPH_API_VERSION", "v26.0").strip()
-    caption = os.environ.get("FB_POST_CAPTION", "Aaj ki nayi vibe!").strip()
+    caption_prefix = os.environ.get("FB_POST_CAPTION", "").strip()
     if not page_id or not access_token:
         raise RuntimeError(
             "Configure FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN in GitHub Secrets."
         )
     if not api_version:
         raise RuntimeError("FB_GRAPH_API_VERSION cannot be empty.")
-    if not caption:
-        raise RuntimeError("FB_POST_CAPTION cannot be empty.")
-
+    
     state = load_json(
         STATE_PATH,
         {"processed_images": [], "scheduled_dates": {}, "run_dates": []},
@@ -636,6 +673,7 @@ def process_next_photo(now: datetime | None = None) -> int:
                 )
 
     publish_at, slot_name = next_publish_slot(current_time, scheduled_dates)
+    caption = create_post_caption(scheduled_dates, publish_at, slot_name, caption_prefix)
     photo_id = upload_unpublished_photo(
         page_id, access_token, api_version, image, caption
     )
@@ -649,6 +687,7 @@ def process_next_photo(now: datetime | None = None) -> int:
     slot_key = f"{publish_at.date().isoformat()}:{slot_name}"
     scheduled_dates[slot_key] = {
         "source_image": relative_path,
+        "caption": caption,
         "facebook_post_id": post_id,
         "facebook_photo_id": photo_id,
         "scheduled_for": publish_at.isoformat(),
