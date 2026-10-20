@@ -233,7 +233,7 @@ def create_pollinations_variation(style_index: int) -> bytes:
         response = httpx.get(
             url,
             params={
-                "model": "flux",
+                "model": "black-forest-labs/flux.1-schnell",
                 "width": 1024,
                 "height": 1280,
                 "seed": random.randint(0, 2**32 - 1),
@@ -257,7 +257,13 @@ def create_pollinations_variation(style_index: int) -> bytes:
             if output.tell() <= MAX_FACEBOOK_IMAGE_SIZE:
                 return output.getvalue()
     except (httpx.HTTPError, OSError, ValueError) as error:
-        diagnostic = " ".join(str(error).split())
+        detail = (
+            error.response.text
+            if isinstance(error, httpx.HTTPStatusError)
+            else str(error)
+        )
+        detail = detail.replace(api_key, "[redacted]")
+        diagnostic = " ".join(detail.split())
         if len(diagnostic) > 300:
             diagnostic = diagnostic[:297] + "..."
         raise RuntimeError(
