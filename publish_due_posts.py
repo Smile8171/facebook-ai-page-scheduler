@@ -236,7 +236,7 @@ def create_pollinations_variation(style_index: int) -> bytes:
                 "model": "black-forest-labs/flux.1-schnell",
                 "width": 1024,
                 "height": 1280,
-                "seed": random.randint(0, 2**32 - 1),
+                "seed": random.randint(0, 2**31 - 1),
                 "nologo": "true",
             },
             headers=headers,
