@@ -31,7 +31,8 @@ class PublishDemoPostTests(unittest.TestCase):
                 ),
                 patch("publish_demo_post.ROOT", root),
                 patch("publish_demo_post.STATE_PATH", state_path),
-                patch("publish_demo_post.get_unprocessed_photos", return_value=[source_path]),
+                patch("publish_demo_post.get_source_photos", return_value=[source_path]),
+                patch("publish_demo_post.get_next_photo", return_value=(source_path, 0)),
                 patch("publish_demo_post.create_ai_variation", return_value=b"edited"),
                 patch("publish_demo_post.upload_unpublished_photo", return_value="photo-id"),
                 patch("publish_demo_post.http_json", return_value={"id": "post-id"}) as http_json,
@@ -43,6 +44,7 @@ class PublishDemoPostTests(unittest.TestCase):
             self.assertIn(b"published=true", http_json.call_args.args[2])
             saved_state = json.loads(state_path.read_text(encoding="utf-8"))
             self.assertEqual(saved_state["processed_images"], ["photos/demo.jpg"])
+            self.assertEqual(saved_state["photo_cycle_index"], 0)
 
 
 if __name__ == "__main__":
