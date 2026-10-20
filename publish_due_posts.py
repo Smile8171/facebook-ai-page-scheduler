@@ -210,6 +210,58 @@ def create_free_variation(source_path: Path, style_index: int) -> bytes:
     raise RuntimeError("Edited photo exceeds Facebook's 10 MB photo limit.")
 
 
+def create_pollinations_variation(style_index: int) -> bytes:
+    style = GENERATED_IMAGE_STYLES[style_index % len(GENERATED_IMAGE_STYLES)]
+    prompt = (
+        "Create a polished, photorealistic vertical fashion portrait for a "
+        "family-friendly social media post. Feature one fictional Korean woman "
+        "who is clearly an adult, age 25 or older. Make her confident, glamorous, "
+        "fashionable, and eye-catching with tasteful contemporary styling that is "
+        "non-explicit and suitable for a broad audience. Use this visual direction: "
+        f"{style}. Give her a natural pose, expressive face, and editorial lighting. "
+        "Create a new person who does not resemble a real or public figure. "
+        "Portrait 4:5 composition; no nudity, sexualized pose, text, watermarks, "
+        "logos, or extra people."
+    )
+    url = "https://gen.pollinations.ai/image/" + urllib.parse.quote(prompt, safe="")
+    print("Gemini failed for every configured key; requesting Pollinations image.", flush=True)
+    try:
+        response = httpx.get(
+            url,
+            params={
+                "model": "flux",
+                "width": 1024,
+                "height": 1280,
+                "seed": random.randint(0, 2**32 - 1),
+                "nologo": "true",
+            },
+            timeout=GEMINI_REQUEST_TIMEOUT_MS / 1000,
+        )
+        response.raise_for_status()
+        if not response.content:
+            raise RuntimeError("Pollinations returned an empty image.")
+        with Image.open(io.BytesIO(response.content)) as generated:
+            generated.load()
+            image = ImageOps.exif_transpose(generated).convert("RGB")
+            image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        for quality in (90, 82, 74):
+            output.seek(0)
+            output.truncate()
+            image.save(output, format="JPEG", quality=quality, optimize=True)
+            if output.tell() <= MAX_FACEBOOK_IMAGE_SIZE:
+                return output.getvalue()
+    except (httpx.HTTPError, OSError, ValueError) as error:
+        diagnostic = " ".join(str(error).split())
+        if len(diagnostic) > 300:
+            diagnostic = diagnostic[:297] + "..."
+        raise RuntimeError(
+            f"Pollinations image generation failed: {error.__class__.__name__}: {diagnostic}"
+        ) from error
+
+    raise RuntimeError("Pollinations image exceeds Facebook's 10 MB photo limit.")
+
+
 def create_ai_variation(
     source_path: Path | None, style_index: int, api_key: str | list[str]
 ) -> bytes:
@@ -503,8 +555,6 @@ def process_next_photo(now: datetime | None = None) -> int:
         raise RuntimeError(
             "Configure FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN in GitHub Secrets."
         )
-    if not gemini_api_keys:
-        raise RuntimeError("Configure GEMINI_API_KEY in GitHub Secrets.")
     if not api_version:
         raise RuntimeError("FB_GRAPH_API_VERSION cannot be empty.")
     if not caption:
@@ -554,15 +604,25 @@ def process_next_photo(now: datetime | None = None) -> int:
             edit_description = "Gemini-generated original portrait"
         except RuntimeError as generation_error:
             print(
-                "Gemini original image generation failed; using local Pillow fallback: "
+                "Gemini original image generation failed; trying Pollinations: "
                 f"{generation_error}",
                 file=sys.stderr,
                 flush=True,
             )
-            image = create_free_variation(photo_path, style_index)
-            edit_description = (
-                f"{FREE_PHOTO_STYLES[style_index % len(FREE_PHOTO_STYLES)]} local edit"
-            )
+            try:
+                image = create_pollinations_variation(style_index)
+                edit_description = "Pollinations AI-generated original portrait"
+            except RuntimeError as pollinations_error:
+                print(
+                    "Pollinations image generation failed; using local Pillow fallback: "
+                    f"{pollinations_error}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                image = create_free_variation(photo_path, style_index)
+                edit_description = (
+                    f"{FREE_PHOTO_STYLES[style_index % len(FREE_PHOTO_STYLES)]} local edit"
+                )
 
     publish_at, slot_name = next_publish_slot(current_time, scheduled_dates)
     photo_id = upload_unpublished_photo(
