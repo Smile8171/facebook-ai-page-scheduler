@@ -2,6 +2,7 @@ import io
 import base64
 import json
 import os
+import random
 import sys
 import uuid
 import urllib.error
@@ -48,6 +49,12 @@ FREE_PHOTO_STYLES = (
     "cinematic",
 )
 GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
+GENERATED_IMAGE_STYLES = (
+    "a vibrant Seoul street-fashion editorial at golden hour",
+    "a polished K-pop-inspired studio portrait with a colorful modern set",
+    "a chic cafe fashion portrait with soft natural window light",
+    "a cinematic neon-lit Seoul night-market portrait",
+)
 
 
 def get_gemini_api_keys() -> list[str]:
@@ -203,39 +210,63 @@ def create_free_variation(source_path: Path, style_index: int) -> bytes:
 
 
 def create_ai_variation(
-    source_path: Path, style_index: int, api_key: str | list[str]
+    source_path: Path | None, style_index: int, api_key: str | list[str]
 ) -> bytes:
     api_keys = [api_key] if isinstance(api_key, str) else api_key
     api_keys = [key.strip() for key in api_keys if key.strip()]
     if not api_keys:
         raise RuntimeError("Configure GEMINI_API_KEY in GitHub Secrets.")
 
-    with Image.open(source_path) as source:
-        source.seek(0)
-        image = ImageOps.exif_transpose(source)
-        if image.mode in ("RGBA", "LA") or "transparency" in image.info:
-            rgba = image.convert("RGBA")
-            background = Image.new("RGBA", rgba.size, "white")
-            background.alpha_composite(rgba)
-            image = background.convert("RGB")
-        else:
-            image = image.convert("RGB")
-        image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
-        image_buffer = io.BytesIO()
-        image.save(image_buffer, format="JPEG", quality=90, optimize=True)
+    if source_path is None:
+        style = random.choice(GENERATED_IMAGE_STYLES)
+        prompt = (
+            "Create a completely original, photorealistic vertical portrait for a "
+            "family-friendly social media post. Feature one fictional Korean woman "
+            "who is clearly an adult, age 25 or older. Make her attractive, confident, "
+            "glamorous, fashionable, and eye-catching, with tasteful contemporary "
+            "styling that is non-explicit and suitable for a broad audience. Use "
+            f"this fresh visual direction: {style}. Give her a natural pose, "
+            "expressive face, polished editorial lighting, and a vivid but realistic "
+            "background. Create a new person, not resembling a real or public figure. "
+            "Portrait 4:5 composition; no nudity, sexualized pose, text, watermarks, "
+            "logos, or extra people."
+        )
+        image_input = prompt
+    else:
+        with Image.open(source_path) as source:
+            source.seek(0)
+            image = ImageOps.exif_transpose(source)
+            if image.mode in ("RGBA", "LA") or "transparency" in image.info:
+                rgba = image.convert("RGBA")
+                background = Image.new("RGBA", rgba.size, "white")
+                background.alpha_composite(rgba)
+                image = background.convert("RGB")
+            else:
+                image = image.convert("RGB")
+            image.thumbnail((2048, 2048), Image.Resampling.LANCZOS)
+            image_buffer = io.BytesIO()
+            image.save(image_buffer, format="JPEG", quality=90, optimize=True)
 
-    style = PHOTO_STYLES[style_index % len(PHOTO_STYLES)]
-    prompt = (
-        "Create a clearly noticeable, photorealistic creative variation of the "
-        "provided photo for a social media post. Preserve the identity and "
-        "recognizable facial features of the person, if present. Change the "
-        "person's pose and camera angle, and create a different background and "
-        "tasteful outfit matching this visual direction: "
-        f"{style}. Keep the main subject recognizable and anatomically natural. "
-        "Make this visibly different from the source; do not return the original "
-        "or make only a color/filter change. Do not add text, watermarks, logos, "
-        "or extra people."
-    )
+        style = PHOTO_STYLES[style_index % len(PHOTO_STYLES)]
+        prompt = (
+            "Create a clearly noticeable, photorealistic creative variation of the "
+            "provided photo for a social media post. Preserve the identity and "
+            "recognizable facial features of the person, if present. Change the "
+            "person's pose and camera angle, and create a different background and "
+            "tasteful outfit matching this visual direction: "
+            f"{style}. Keep the main subject recognizable and anatomically natural. "
+            "Make this visibly different from the source; do not return the original "
+            "or make only a color/filter change. Do not add text, watermarks, logos, "
+            "or extra people."
+        )
+        image_input = [
+            {"type": "text", "text": prompt},
+            {
+                "type": "image",
+                "mime_type": "image/jpeg",
+                "data": base64.b64encode(image_buffer.getvalue()).decode("ascii"),
+            },
+        ]
     interaction = None
     last_error: Exception | None = None
     image_input = [
@@ -246,11 +277,12 @@ def create_ai_variation(
             "data": base64.b64encode(image_buffer.getvalue()).decode("ascii"),
         },
     ]
+    max_attempts = 1 if source_path is None else GEMINI_MAX_ATTEMPTS
     for key_index, key in enumerate(api_keys):
-        for attempt in range(GEMINI_MAX_ATTEMPTS):
+        for attempt in range(max_attempts):
             print(
                 f"Gemini image request for key {key_index + 1}/{len(api_keys)}, "
-                f"attempt {attempt + 1}/{GEMINI_MAX_ATTEMPTS}; "
+                f"attempt {attempt + 1}/{max_attempts}; "
                 f"timeout {GEMINI_REQUEST_TIMEOUT_MS // 1000}s.",
                 flush=True,
             )
@@ -308,7 +340,7 @@ def create_ai_variation(
                         flush=True,
                     )
                     break
-                if attempt + 1 < GEMINI_MAX_ATTEMPTS:
+                if attempt + 1 < max_attempts:
                     retry_delay = 2**attempt
                     print(
                         f"Retrying Gemini request in {retry_delay}s.",
@@ -518,16 +550,26 @@ def process_next_photo(now: datetime | None = None) -> int:
     try:
         image = create_ai_variation(photo_path, style_index, gemini_api_keys)
         edit_description = f"{style} AI edit"
-    except RuntimeError as error:
+    except RuntimeError as edit_error:
         print(
-            f"Gemini image editing failed; using local Pillow fallback: {error}",
+            f"Gemini photo edit failed; trying a new original image: {edit_error}",
             file=sys.stderr,
             flush=True,
         )
-        image = create_free_variation(photo_path, style_index)
-        edit_description = (
-            f"{FREE_PHOTO_STYLES[style_index % len(FREE_PHOTO_STYLES)]} local edit"
-        )
+        try:
+            image = create_ai_variation(None, style_index, gemini_api_keys)
+            edit_description = "Gemini-generated original portrait"
+        except RuntimeError as generation_error:
+            print(
+                "Gemini original image generation failed; using local Pillow fallback: "
+                f"{generation_error}",
+                file=sys.stderr,
+                flush=True,
+            )
+            image = create_free_variation(photo_path, style_index)
+            edit_description = (
+                f"{FREE_PHOTO_STYLES[style_index % len(FREE_PHOTO_STYLES)]} local edit"
+            )
 
     publish_at, slot_name = next_publish_slot(current_time, scheduled_dates)
     photo_id = upload_unpublished_photo(
