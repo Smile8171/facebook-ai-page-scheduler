@@ -7,14 +7,14 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from PIL import Image
-
-from google.genai.errors import APIError
-from google.genai._gaos.lib.compat_errors import APITimeoutError
 import httpx
+
+from google.genai._gaos.lib.compat_errors import APITimeoutError
+from google.genai.errors import APIError
 
 from publish_due_posts import (
     GEMINI_IMAGE_MODEL,
-    GEMINI_REQUEST_TIMEOUT_SECONDS,
+    GEMINI_REQUEST_TIMEOUT_MS,
     MAX_FACEBOOK_IMAGE_SIZE,
     create_ai_variation,
     create_free_variation,
@@ -73,7 +73,7 @@ class FreePhotoVariationTests(unittest.TestCase):
         )
         self.assertEqual(
             client_factory.call_args.kwargs["http_options"].timeout,
-            GEMINI_REQUEST_TIMEOUT_SECONDS,
+            GEMINI_REQUEST_TIMEOUT_MS,
         )
         self.assertEqual(
             client_factory.call_args.kwargs["http_options"].retry_options.attempts,
