@@ -223,6 +223,10 @@ def create_pollinations_variation(style_index: int) -> bytes:
         "Portrait 4:5 composition; no nudity, sexualized pose, text, watermarks, "
         "logos, or extra people."
     )
+    api_key = os.environ.get("POLLINATIONS_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("Configure POLLINATIONS_API_KEY in GitHub Actions Secrets.")
+    headers = {"Authorization": f"Bearer {api_key}"}
     url = "https://gen.pollinations.ai/image/" + urllib.parse.quote(prompt, safe="")
     print("Gemini failed for every configured key; requesting Pollinations image.", flush=True)
     try:
@@ -235,6 +239,7 @@ def create_pollinations_variation(style_index: int) -> bytes:
                 "seed": random.randint(0, 2**32 - 1),
                 "nologo": "true",
             },
+            headers=headers,
             timeout=GEMINI_REQUEST_TIMEOUT_MS / 1000,
         )
         response.raise_for_status()
