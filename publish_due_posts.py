@@ -13,9 +13,6 @@ from time import sleep
 from typing import Any
 
 import httpx
-from google import genai
-from google.genai import types
-from google.genai.errors import APIError
 from PIL import Image, ImageEnhance, ImageOps
 
 ROOT = Path(__file__).resolve().parent
@@ -250,13 +247,6 @@ def create_ai_variation(
         },
     ]
     for key_index, key in enumerate(api_keys):
-        client = genai.Client(
-            api_key=key,
-            http_options=types.HttpOptions(
-                timeout=GEMINI_REQUEST_TIMEOUT_MS,
-                retry_options=types.HttpRetryOptions(attempts=1),
-            ),
-        )
         for attempt in range(GEMINI_MAX_ATTEMPTS):
             print(
                 f"Gemini image request for key {key_index + 1}/{len(api_keys)}, "
@@ -265,32 +255,27 @@ def create_ai_variation(
                 flush=True,
             )
             try:
-                interaction = client.interactions.create(
-                    model=GEMINI_IMAGE_MODEL,
-                    input=image_input,
+                response = httpx.post(
+                    "https://generativelanguage.googleapis.com/v1beta/interactions",
+                    headers={"x-goog-api-key": key},
+                    json={"model": GEMINI_IMAGE_MODEL, "input": image_input},
+                    timeout=GEMINI_REQUEST_TIMEOUT_MS / 1000,
                 )
+                response.raise_for_status()
+                interaction = response.json()
+                if not isinstance(interaction, dict):
+                    raise RuntimeError("Gemini API returned an unexpected response.")
                 break
             except Exception as error:
-                is_gemini_api_error = isinstance(error, APIError) or (
-                    error.__class__.__module__.startswith("google.genai.")
-                    and (
-                        hasattr(error, "status_code")
-                        or hasattr(error, "message")
-                        or error.__class__.__name__ in {
-                            "APIConnectionError",
-                            "APITimeoutError",
-                        }
-                    )
-                )
-                if not (
-                    is_gemini_api_error
-                    or isinstance(error, httpx.HTTPError)
-                ):
+                if not isinstance(error, (httpx.HTTPError, ValueError)):
                     raise
                 last_error = error
                 error_message = str(error).lower()
-                status_code = getattr(error, "code", None) or getattr(
-                    error, "status_code", None
+                status_code = (
+                    error.response.status_code
+                    if isinstance(error, httpx.HTTPStatusError)
+                    else getattr(error, "code", None)
+                    or getattr(error, "status_code", None)
                 )
                 quota_exhausted = (
                     status_code == 429
@@ -298,7 +283,11 @@ def create_ai_variation(
                     or "quota" in error_message
                     or "rate limit" in error_message
                 )
-                diagnostic = str(error)
+                diagnostic = (
+                    error.response.text
+                    if isinstance(error, httpx.HTTPStatusError)
+                    else str(error)
+                )
                 for configured_key in api_keys:
                     diagnostic = diagnostic.replace(configured_key, "[redacted]")
                 diagnostic = " ".join(diagnostic.split())
@@ -343,8 +332,12 @@ def create_ai_variation(
             message = message.replace(key, "[redacted]")
         raise RuntimeError(f"Gemini image editing failed: {message}") from last_error
 
-    output_image = getattr(interaction, "output_image", None)
-    image_data = getattr(output_image, "data", None)
+    output_image = interaction.get("output_image")
+    image_data = (
+        output_image.get("data")
+        if isinstance(output_image, dict)
+        else None
+    )
     if not isinstance(image_data, str) or not image_data:
         raise RuntimeError("Gemini response did not contain an edited image.")
 
