@@ -209,7 +209,8 @@ class PublishSlotTests(unittest.TestCase):
 
         with (
             patch.dict("os.environ", {"POLLINATIONS_API_KEY": "test-key"}),
-            patch("publish_due_posts.httpx.get", return_value=response) as request,
+            patch("publish_due_posts.random.randint", return_value=1) as randint,            
+        patch("publish_due_posts.httpx.get", return_value=response) as request,
         ):
             image = create_pollinations_variation(0)
 
@@ -221,7 +222,8 @@ class PublishSlotTests(unittest.TestCase):
             request.call_args.kwargs["params"]["model"],
             "black-forest-labs/flux.1-schnell",
         )
-        self.assertEqual(request.call_args.kwargs["params"]["nologo"], "true")
+        self.assertEqual(request.call_args.kwargs["params"]["nologo"], "true")        
+        randint.assert_called_once_with(0, 2**31 - 1)
         self.assertTrue(image.startswith(b"\xff\xd8"))
 
     def test_scheduler_uses_pollinations_when_all_gemini_keys_fail(self) -> None:
