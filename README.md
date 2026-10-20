@@ -2,8 +2,8 @@
 
 Add source photos to `photos/` in this repository. GitHub Actions cycles through
 them, asks Gemini to create a new variation for every post, uploads the edited
-image to the Facebook Page, and schedules two posts daily for 7:00 AM and
-5:00 PM India time.
+image to the Facebook Page, and schedules three posts daily for 7:00 AM, 1:10 PM, and 5:00 PM
+India time.
 
 ## One-time setup
 
@@ -24,10 +24,11 @@ image to the Facebook Page, and schedules two posts daily for 7:00 AM and
    `CREATE_CONTENT`, `MANAGE`, and `MODERATE` tasks. Generate a fresh Page token
    after granting the permissions and save that token in GitHub Secrets.
 
-GitHub Actions runs daily at 6:00 AM and 4:00 PM India time (00:30 and 10:30
-UTC), scheduling posts one hour later for 7:00 AM and 5:00 PM. Each time slot is
-tracked separately in `state.json`, so both posts can be scheduled on the same
-date and reruns do not duplicate a slot. If a run starts too late for the
+GitHub Actions runs daily at 6:00 AM, 12:10 PM, and 4:00 PM India time
+(00:30, 06:40, and 10:30 UTC), scheduling posts one hour later for 7:00 AM,
+1:10 PM, and 5:00 PM. Each time slot is tracked separately in `state.json`,
+so all three posts can be scheduled on the same date and reruns do not duplicate
+a slot. If a run starts too late for the
 upcoming slot, the scheduler chooses the next available slot.
 
 To publish one public demo immediately, manually run **Publish Gemini-edited
