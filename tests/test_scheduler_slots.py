@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from publish_due_posts import (
     LOCAL_TIMEZONE,
+    get_gemini_api_keys,
     get_next_photo,
     next_publish_slot,
     process_next_photo,
@@ -14,6 +15,21 @@ from publish_due_posts import (
 
 
 class PublishSlotTests(unittest.TestCase):
+    def test_loads_three_gemini_keys_in_order(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {
+                "GEMINI_API_KEY": " primary ",
+                "GEMINI_API_KEY_2": " secondary ",
+                "GEMINI_API_KEY_3": " tertiary ",
+            },
+            clear=True,
+        ):
+            self.assertEqual(
+                get_gemini_api_keys(),
+                ["primary", "secondary", "tertiary"],
+            )
+
     def test_selects_all_three_daily_slots_independently(self) -> None:
         now = datetime(2026, 10, 20, 0, 30, tzinfo=timezone.utc)
 
