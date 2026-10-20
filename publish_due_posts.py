@@ -24,7 +24,7 @@ STATE_PATH = ROOT / "state.json"
 LOCAL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 POST_TIMES = (
     ("morning", time(hour=7)),
-    ("afternoon", time(hour=13, minute=25)),
+    ("afternoon", time(hour=13, minute=10)),
     ("evening", time(hour=17)),
 )
 SCHEDULE_BUFFER = timedelta(minutes=15)
