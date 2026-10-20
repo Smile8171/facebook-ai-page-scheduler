@@ -5,9 +5,10 @@
     "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg",
     "photos/reference1.jpg",
     "photos/reference2.jpg",
-    "photos/reference3.jpg"
+    "photos/reference3.jpg",
+    "photos/reference4.jpg"
   ],
-  "photo_cycle_index": 6,
+  "photo_cycle_index": 7,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -50,10 +51,19 @@
       "facebook_photo_id": "122174368466986570",
       "scheduled_for": "2026-10-22T07:00:00+05:30",
       "slot": "morning"
+    },
+    "2026-10-22:afternoon": {
+      "source_image": "photos/reference4.jpg",
+      "caption": "Confidence sabse khoobsurat accessory hai. Aaj aap kis baat par proud ho?",
+      "facebook_post_id": "732689656598200_122174394776986570",
+      "facebook_photo_id": "122174394740986570",
+      "scheduled_for": "2026-10-22T13:10:00+05:30",
+      "slot": "afternoon"
     }
   },
   "run_dates": [
     "2026-10-19",
+    "2026-10-20",
     "2026-10-20",
     "2026-10-20",
     "2026-10-20",
