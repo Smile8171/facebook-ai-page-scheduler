@@ -269,14 +269,6 @@ def create_ai_variation(
         ]
     interaction = None
     last_error: Exception | None = None
-    image_input = [
-        {"type": "text", "text": prompt},
-        {
-            "type": "image",
-            "mime_type": "image/jpeg",
-            "data": base64.b64encode(image_buffer.getvalue()).decode("ascii"),
-        },
-    ]
     max_attempts = 1 if source_path is None else GEMINI_MAX_ATTEMPTS
     for key_index, key in enumerate(api_keys):
         for attempt in range(max_attempts):
