@@ -62,8 +62,8 @@ you only wanted a preview.
   Facebook's image size limits without cropping.
 - Each post's source path is recorded in `state.json`, including repeated
   cycles. Newly added photos join the alphabetical cycle.
-- To change the caption, set the optional repository variable
-  `FB_POST_CAPTION`. The default is `Aaj ki nayi vibe!`.
+- Each scheduled post gets a distinct Hinglish caption from a rotating set; captions are saved in state.json and skipped when already used. Set optional repository variable FB_POST_CAPTION to prepend custom text.
+  
 - Set the optional repository variable `FB_GRAPH_API_VERSION` to a currently
   supported Graph API version; the default is `v26.0`.
 
