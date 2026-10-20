@@ -22,7 +22,11 @@ ROOT = Path(__file__).resolve().parent
 PHOTOS_DIR = ROOT / "photos"
 STATE_PATH = ROOT / "state.json"
 LOCAL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
-POST_TIMES = (("morning", time(hour=7)), ("evening", time(hour=17)))
+POST_TIMES = (
+    ("morning", time(hour=7)),
+    ("afternoon", time(hour=13, minute=10)),
+    ("evening", time(hour=17)),
+)
 SCHEDULE_BUFFER = timedelta(minutes=15)
 MAX_FACEBOOK_IMAGE_SIZE = 10 * 1024 * 1024
 GEMINI_REQUEST_TIMEOUT_MS = 60_000
