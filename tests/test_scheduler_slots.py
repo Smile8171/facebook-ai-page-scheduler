@@ -190,6 +190,62 @@ class PublishSlotTests(unittest.TestCase):
             self.assertEqual(upload.call_args.args[3], b"generated-image")
             local_edit.assert_not_called()
 
+    def test_scheduler_uses_pollinations_when_all_gemini_keys_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            source_path = root / "photos" / "source.jpg"
+            source_path.parent.mkdir()
+            source_path.touch()
+            state_path = root / "state.json"
+            state_path.write_text(
+                json.dumps(
+                    {"processed_images": [], "scheduled_dates": {}, "run_dates": []}
+                ),
+                encoding="utf-8",
+            )
+            publish_time = datetime(2026, 10, 20, 6, 0, tzinfo=LOCAL_TIMEZONE)
+            gemini_keys = ["primary", "secondary", "tertiary"]
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    {
+                        "FB_PAGE_ID": "page-id",
+                        "FB_PAGE_ACCESS_TOKEN": "page-token",
+                        "GEMINI_API_KEY": gemini_keys[0],
+                        "GEMINI_API_KEY_2": gemini_keys[1],
+                        "GEMINI_API_KEY_3": gemini_keys[2],
+                    },
+                ),
+                patch("publish_due_posts.ROOT", root),
+                patch("publish_due_posts.STATE_PATH", state_path),
+                patch("publish_due_posts.get_source_photos", return_value=[source_path]),
+                patch(
+                    "publish_due_posts.create_ai_variation",
+                    side_effect=RuntimeError("Gemini quota exhausted"),
+                ) as ai_variation,
+                patch(
+                    "publish_due_posts.create_pollinations_variation",
+                    return_value=b"pollinations-image",
+                ) as pollinations,
+                patch("publish_due_posts.create_free_variation") as local_edit,
+                patch(
+                    "publish_due_posts.upload_unpublished_photo",
+                    return_value="photo-id",
+                ) as upload,
+                patch("publish_due_posts.schedule_page_post", return_value="post-id"),
+            ):
+                self.assertEqual(process_next_photo(publish_time), 0)
+
+            self.assertEqual(ai_variation.call_count, 2)
+            self.assertEqual(
+                [call.args[2] for call in ai_variation.call_args_list],
+                [gemini_keys, gemini_keys],
+            )
+            pollinations.assert_called_once_with(0)
+            self.assertEqual(upload.call_args.args[3], b"pollinations-image")
+            local_edit.assert_not_called()
+
     def test_scheduler_uses_local_edit_when_gemini_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -220,6 +276,10 @@ class PublishSlotTests(unittest.TestCase):
                 patch(
                     "publish_due_posts.create_ai_variation",
                     side_effect=RuntimeError("Gemini timed out"),
+                ),
+                patch(
+                    "publish_due_posts.create_pollinations_variation",
+                    side_effect=RuntimeError("Pollinations unavailable"),
                 ),
                 patch(
                     "publish_due_posts.create_free_variation",
