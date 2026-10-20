@@ -37,6 +37,7 @@ jobs:
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2: ${{ secrets.GEMINI_API_KEY_2 }}
+          GEMINI_API_KEY_3: ${{ secrets.GEMINI_API_KEY_3 }}
           FB_GRAPH_API_VERSION: ${{ vars.FB_GRAPH_API_VERSION || 'v26.0' }}
           FB_POST_CAPTION: ${{ vars.FB_POST_CAPTION || 'Aaj ki nayi vibe!' }}
         run: python publish_due_posts.py
