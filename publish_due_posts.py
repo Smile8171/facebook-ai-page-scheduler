@@ -63,6 +63,7 @@ def get_gemini_api_keys() -> list[str]:
         for key in (
             os.environ.get("GEMINI_API_KEY", "").strip(),
             os.environ.get("GEMINI_API_KEY_2", "").strip(),
+            os.environ.get("GEMINI_API_KEY_3", "").strip(),
         )
         if key
     ]
