@@ -25,7 +25,7 @@ LOCAL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 POST_TIMES = (("morning", time(hour=7)), ("evening", time(hour=17)))
 SCHEDULE_BUFFER = timedelta(minutes=15)
 MAX_FACEBOOK_IMAGE_SIZE = 10 * 1024 * 1024
-GEMINI_REQUEST_TIMEOUT_SECONDS = 300
+GEMINI_REQUEST_TIMEOUT_MS = 300_000
 GEMINI_MAX_ATTEMPTS = 2
 IMAGE_EXTENSIONS = {".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
 PHOTO_STYLES = (
@@ -249,7 +249,7 @@ def create_ai_variation(
         client = genai.Client(
             api_key=key,
             http_options=types.HttpOptions(
-                timeout=GEMINI_REQUEST_TIMEOUT_SECONDS,
+                timeout=GEMINI_REQUEST_TIMEOUT_MS,
                 retry_options=types.HttpRetryOptions(attempts=1),
             ),
         )
