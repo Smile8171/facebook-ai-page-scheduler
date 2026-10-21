@@ -8,9 +8,10 @@
     "photos/reference3.jpg",
     "photos/reference4.jpg",
     "photos/reference5.jpg",
-    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg"
+    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
+    "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg"
   ],
-  "photo_cycle_index": 1,
+  "photo_cycle_index": 2,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -77,6 +78,14 @@
       "facebook_photo_id": "122174500892986570",
       "scheduled_for": "2026-10-23T07:00:00+05:30",
       "slot": "morning"
+    },
+    "2026-10-23:afternoon": {
+      "source_image": "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg",
+      "caption": "Apne liye waqt nikalna bhi zaroori hai. Aaj aapne khud ko kya treat diya?",
+      "facebook_post_id": "732689656598200_122174519810986570",
+      "facebook_photo_id": "122174519780986570",
+      "scheduled_for": "2026-10-23T13:10:00+05:30",
+      "slot": "afternoon"
     }
   },
   "run_dates": [
@@ -87,6 +96,7 @@
     "2026-10-20",
     "2026-10-20",
     "2026-10-20",
+    "2026-10-21",
     "2026-10-21",
     "2026-10-21"
   ]
