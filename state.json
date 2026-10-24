@@ -15,9 +15,10 @@
     "photos/reference2.jpg",
     "photos/reference3.jpg",
     "photos/reference4.jpg",
-    "photos/reference5.jpg"
+    "photos/reference5.jpg",
+    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg"
   ],
-  "photo_cycle_index": 0,
+  "photo_cycle_index": 1,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -140,6 +141,14 @@
       "facebook_photo_id": "122174803298986570",
       "scheduled_for": "2026-10-25T13:10:00+05:30",
       "slot": "afternoon"
+    },
+    "2026-10-25:evening": {
+      "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
+      "caption": "Shaam ki calm vibes ya morning ki fresh energy - aapki pick kya hai?",
+      "facebook_post_id": "732689656598200_122174879450986570",
+      "facebook_photo_id": "122174879414986570",
+      "scheduled_for": "2026-10-25T17:00:00+05:30",
+      "slot": "evening"
     }
   },
   "run_dates": [
@@ -158,6 +167,7 @@
     "2026-10-22",
     "2026-10-23",
     "2026-10-23",
-    "2026-10-23"
+    "2026-10-23",
+    "2026-10-24"
   ]
 }
