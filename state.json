@@ -19,9 +19,10 @@
     "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
     "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg",
     "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg",
-    "photos/reference1.jpg"
+    "photos/reference1.jpg",
+    "photos/reference2.jpg"
   ],
-  "photo_cycle_index": 4,
+  "photo_cycle_index": 5,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -176,6 +177,14 @@
       "facebook_photo_id": "122175017888986570",
       "scheduled_for": "2026-10-26T17:00:00+05:30",
       "slot": "evening"
+    },
+    "2026-10-27:morning": {
+      "source_image": "photos/reference2.jpg",
+      "caption": "Chhoti khushiyan hi bade pal banati hain. Aapki aaj ki khushi kya hai? (2026-10-27 morning)",
+      "facebook_post_id": "732689656598200_122175069656986570",
+      "facebook_photo_id": "122175069626986570",
+      "scheduled_for": "2026-10-27T07:00:00+05:30",
+      "slot": "morning"
     }
   },
   "run_dates": [
@@ -198,6 +207,7 @@
     "2026-10-24",
     "2026-10-24",
     "2026-10-24",
+    "2026-10-25",
     "2026-10-25"
   ]
 }
