@@ -21,9 +21,10 @@
     "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg",
     "photos/reference1.jpg",
     "photos/reference2.jpg",
-    "photos/reference3.jpg"
+    "photos/reference3.jpg",
+    "photos/reference4.jpg"
   ],
-  "photo_cycle_index": 6,
+  "photo_cycle_index": 7,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -194,6 +195,14 @@
       "facebook_photo_id": "122175084320986570",
       "scheduled_for": "2026-10-27T13:10:00+05:30",
       "slot": "afternoon"
+    },
+    "2026-10-27:evening": {
+      "source_image": "photos/reference4.jpg",
+      "caption": "Thoda sa rang, thodi si masti. Aaj ka mood ek word mein batao! (2026-10-27 evening)",
+      "facebook_post_id": "732689656598200_122175162626986570",
+      "facebook_photo_id": "122175162596986570",
+      "scheduled_for": "2026-10-27T17:00:00+05:30",
+      "slot": "evening"
     }
   },
   "run_dates": [
@@ -218,6 +227,7 @@
     "2026-10-24",
     "2026-10-25",
     "2026-10-25",
-    "2026-10-25"
+    "2026-10-25",
+    "2026-10-26"
   ]
 }
