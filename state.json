@@ -26,9 +26,10 @@
     "photos/reference5.jpg",
     "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
     "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg",
-    "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg"
+    "photos/pargat-dhillon-cT_pYWVSdWU-unsplash.jpg",
+    "photos/reference1.jpg"
   ],
-  "photo_cycle_index": 3,
+  "photo_cycle_index": 4,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -239,6 +240,14 @@
       "facebook_photo_id": "122175343802986570",
       "scheduled_for": "2026-10-29T07:00:00+05:30",
       "slot": "morning"
+    },
+    "2026-10-29:afternoon": {
+      "source_image": "photos/reference1.jpg",
+      "caption": "Dil se muskurao, baaki din khud chamkega. Aaj aap kis baat ke grateful ho? (2026-10-29 afternoon)",
+      "facebook_post_id": "732689656598200_122175367676986570",
+      "facebook_photo_id": "122175367646986570",
+      "scheduled_for": "2026-10-29T13:10:00+05:30",
+      "slot": "afternoon"
     }
   },
   "run_dates": [
@@ -267,6 +276,7 @@
     "2026-10-26",
     "2026-10-26",
     "2026-10-26",
+    "2026-10-27",
     "2026-10-27",
     "2026-10-27"
   ]
