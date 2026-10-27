@@ -24,9 +24,10 @@
     "photos/reference3.jpg",
     "photos/reference4.jpg",
     "photos/reference5.jpg",
-    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg"
+    "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
+    "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg"
   ],
-  "photo_cycle_index": 1,
+  "photo_cycle_index": 2,
   "scheduled_dates": {
     "2026-10-19": {
       "source_image": "photos/arun-prakash-4cCbxdO_7zM-unsplash.jpg",
@@ -221,6 +222,14 @@
       "facebook_photo_id": "122175229040986570",
       "scheduled_for": "2026-10-28T13:10:00+05:30",
       "slot": "afternoon"
+    },
+    "2026-10-28:evening": {
+      "source_image": "photos/dhruv-vishwakarma-g6TAHSxHksA-unsplash.jpg",
+      "caption": "Good vibes aur ek fresh start. Aaj ka goal kya hai? (2026-10-28 evening)",
+      "facebook_post_id": "732689656598200_122175302546986570",
+      "facebook_photo_id": "122175302510986570",
+      "scheduled_for": "2026-10-28T17:00:00+05:30",
+      "slot": "evening"
     }
   },
   "run_dates": [
@@ -248,6 +257,7 @@
     "2026-10-25",
     "2026-10-26",
     "2026-10-26",
-    "2026-10-26"
+    "2026-10-26",
+    "2026-10-27"
   ]
 }
